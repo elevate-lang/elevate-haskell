@@ -7,16 +7,16 @@ import UntypedLambdaCalculus.Core
 -- Lambda Calculus Rules
 
 betaReduction :: Strategy Expr
-betaReduction (App (Abs x e) y) = Success (substitute x y e)
+betaReduction (App (Abs x e) y) = success (substitute x y e)
 betaReduction _                 = Failure betaReduction
 
 -- todo create fresh name
 etaAbstraction :: Strategy Expr
-etaAbstraction p = Success (Abs "η" (App p (Var "η")))
+etaAbstraction p = success (Abs "η" (App p (Var "η")))
 
 -- todo check that it's free
 etaReduction :: Strategy Expr
-etaReduction (Abs x e) = Success e
+etaReduction (Abs x e) = success e
 etaReduction _         = Failure etaReduction
 
 
@@ -24,9 +24,22 @@ etaReduction _         = Failure etaReduction
 normalOrder :: Strategy Expr
 normalOrder = normalize betaReduction
 
+callByName :: Strategy Expr
+callByName = repeat' (lChoice' betaReduction (lChoice' (function callByName) (argument callByName)))
+
+callByValueStep :: Strategy Expr
+callByValueStep = lChoice' (lChoice' (function callByValueStep) (argument callByValueStep)) betaReduction
+
+callByValue :: Strategy Expr
+callByValue = repeat' callByValueStep
+--callByValue = repeat' (lChoice' (lChoice' (function callByValue) (argument callByValue)) betaReduction)
+
+someOtherOrder :: Strategy Expr
+someOtherOrder = repeat' (oncebu betaReduction)
+
 -- Lambda Calculus Traversable Instance
 instance Traversable' Expr where
-    all' s (Var x)   = Success (Var x)
+    all' s (Var x)   = success (Var x)
     all' s (Abs x e) = mapSuccess (\g -> Abs x g) (s e)
     all' s (App f e) = flatMapSuccess (\a -> mapSuccess (\b -> App a b) (s e)) (s f)
 

@@ -4,7 +4,7 @@ import Elevate
 
 -- Naive Strategies
 id' :: Strategy p
-id' p = Success p
+id' p = success p 
 
 fail' :: Strategy p
 fail' p = Failure fail'
@@ -32,6 +32,9 @@ class Traversable' p where
 -- Complete Traversals
 oncetd :: Traversable' p => Strategy p -> Strategy p
 oncetd s = lChoice' s (one' (oncetd s))
+
+oncebu :: Traversable' p => Strategy p -> Strategy p
+oncebu s = lChoice' (one' (oncebu s)) s
 
 topdown :: Traversable' p => Strategy p -> Strategy p
 topdown s = seq' s (all' (topdown s))

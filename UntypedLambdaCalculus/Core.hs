@@ -8,6 +8,7 @@ data Expr = Var Name
           deriving (Eq)
 
 instance Show Expr where
+    show (Abs x1 (Var x2)) | x1 == x2 = "id"
     show (Var x) = x
     show (Abs x y) = "λ" ++ x ++ "." ++ show y
     show (App f e) = "(" ++ show f ++ " " ++ show e ++ ")"
