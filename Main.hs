@@ -12,18 +12,21 @@ strategy = repeat' (function strategy)
 
 simplified = apply callByValue expr
 
+applyAndPrint:: Strategy Expr -> String
+applyAndPrint s = generateDerivation expr (apply s expr)
+
 main :: IO ()
 main = do
     putStrLn ""
     putStrLn ((show "input: ") ++ (show expr))
     putStrLn ""
     putStrLn (show "NormalOrder:")
-    putStrLn (show (apply normalOrder expr))
+    putStrLn (applyAndPrint normalOrder)
     putStrLn ""
     putStrLn (show "CallByValue:")
-    putStrLn (show (apply callByValue expr))
+    putStrLn (applyAndPrint callByValue)
     putStrLn ""
     putStrLn (show "CallByName:")
-    putStrLn (show (apply callByName expr))
+    putStrLn (applyAndPrint callByName)
 
 

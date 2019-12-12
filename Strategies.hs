@@ -39,8 +39,6 @@ oncebu s = lChoice' (one' (oncebu s)) s
 topdown :: Traversable' p => Strategy p -> Strategy p
 topdown s = seq' s (all' (topdown s))
 
-
+-- Normalize
 normalize :: Traversable' p => Strategy p -> Strategy p
 normalize s = repeat' (oncetd s)
-
--- ...

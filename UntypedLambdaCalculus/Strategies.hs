@@ -40,9 +40,9 @@ someOtherOrder = repeat' (oncebu betaReduction)
 -- Lambda Calculus Traversable Instance
 instance Traversable' Expr where
     all' s = Strategy (\p -> case p of 
-        r@(Var x)   -> success r (all' s) (Var x)
-        (Abs x e)   -> mapSuccess (\g -> Abs x g) (apply s e)
-        (App f e)   -> flatMapSuccess (
+        r@(Var x) -> success r (all' s) (Var x)
+        (Abs x e) -> mapSuccess (\g -> Abs x g) (apply s e)
+        (App f e) -> flatMapSuccess (
             Strategy (\a -> mapSuccess (\b -> App a b) (apply s e)) ""
             ) (apply s f)
         ) "all'"
