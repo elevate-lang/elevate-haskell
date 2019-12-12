@@ -7,18 +7,19 @@ import UntypedLambdaCalculus.Core
 -- Lambda Calculus Rules
 
 betaReduction :: Strategy Expr
-betaReduction (App (Abs x e) y) = success (substitute x y e)
-betaReduction _                 = Failure betaReduction
+betaReduction = Strategy (\p -> case p of
+    (App (Abs x e) y) -> success betaReduction (substitute x y e)
+    _                 -> Failure betaReduction) "betaReduction"
 
 -- todo create fresh name
 etaAbstraction :: Strategy Expr
-etaAbstraction p = success (Abs "η" (App p (Var "η")))
+etaAbstraction = Strategy (\p -> success etaAbstraction (Abs "η" (App p (Var "η")))) "etaAbstraction"
 
 -- todo check that it's free
 etaReduction :: Strategy Expr
-etaReduction (Abs x e) = success e
-etaReduction _         = Failure etaReduction
-
+etaReduction = Strategy (\p -> case p of
+    (Abs x e) -> success etaReduction e
+    _         -> Failure etaReduction) "etaReduction"
 
 -- Evaluation Strategies
 normalOrder :: Strategy Expr
@@ -32,31 +33,44 @@ callByValueStep = lChoice' (lChoice' (function callByValueStep) (argument callBy
 
 callByValue :: Strategy Expr
 callByValue = repeat' callByValueStep
---callByValue = repeat' (lChoice' (lChoice' (function callByValue) (argument callByValue)) betaReduction)
 
 someOtherOrder :: Strategy Expr
 someOtherOrder = repeat' (oncebu betaReduction)
 
 -- Lambda Calculus Traversable Instance
 instance Traversable' Expr where
-    all' s (Var x)   = success (Var x)
-    all' s (Abs x e) = mapSuccess (\g -> Abs x g) (s e)
-    all' s (App f e) = flatMapSuccess (\a -> mapSuccess (\b -> App a b) (s e)) (s f)
+    all' s = Strategy (\p -> case p of 
+        (Var x)   -> success (all' s) (Var x)
+        (Abs x e) -> mapSuccess (\g -> Abs x g) (apply s e)
+        (App f e) -> flatMapSuccess (
+            Strategy (\a -> mapSuccess (\b -> App a b) (apply s e)) ""
+            ) (apply s f)
+        ) "all'"
 
-    one' s (Var x)   = Failure (one' s)
-    one' s (Abs x e) = mapSuccess (\g -> Abs x g) (s e)
-    one' s (App f e) = flatMapFailure (\_ -> mapSuccess (\b -> App f b) (s e)) (s f)
+    one' s = Strategy (\p -> case p of 
+        (Var x)   -> Failure (one' s)
+        (Abs x e) -> mapSuccess (\g -> Abs x g) (apply s e)
+        (App f e) -> flatMapFailure (
+            \_ -> mapSuccess (\b -> App f b) (apply s e)
+            ) (apply s f)
+        ) "one'"
 
 
 -- Lambda Calculus Traversals
 body :: Strategy Expr -> Strategy Expr
-body s (Abs x e) = mapSuccess (\p -> (Abs x p)) (s e)
-body s _         = Failure (body s)
+body s = Strategy (\p -> case p of 
+    (Abs x e) -> mapSuccess (\p -> (Abs x p)) (apply s e)
+    _         -> Failure (body s)
+    ) "body"
 
 function :: Strategy Expr -> Strategy Expr
-function s (App f e) = mapSuccess (\x -> (App x e)) (s f)
-function s _         = Failure (function s)
+function s = Strategy (\p -> case p of 
+    (App f e) -> mapSuccess (\x -> (App x e)) (apply s f)
+    _         -> Failure (function s)
+    ) "function"
 
 argument :: Strategy Expr -> Strategy Expr
-argument s (App f e) = mapSuccess (\x -> (App f x)) (s e)
-argument s _         = Failure (argument s)
+argument s = Strategy (\p -> case p of
+    (App f e) -> mapSuccess (\x -> (App f x)) (apply s e)
+    _         -> Failure (argument s)
+    ) "argument"

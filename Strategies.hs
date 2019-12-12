@@ -3,18 +3,18 @@ module Strategies where
 import Elevate
 
 -- Naive Strategies
-id' :: Strategy p
-id' p = success p 
+id' :: Strategy p 
+id' = Strategy (\p -> success id' p) "id'"
 
 fail' :: Strategy p
-fail' p = Failure fail'
+fail' = Strategy (\p -> Failure fail') "fail'"
 
 -- Basic Combinators
 seq' :: Strategy p -> Strategy p -> Strategy p
-seq' f s p = flatMapSuccess s (f p)
+seq' f s = Strategy (\p -> flatMapSuccess s (apply f p)) "seq'"
 
 lChoice' :: Strategy p -> Strategy p -> Strategy p
-lChoice' f s p = flatMapFailure (\_ -> (s p)) (f p)
+lChoice' f s = Strategy (\p -> flatMapFailure (\_ -> (apply s p)) (apply f p)) "lChoice'"
 
 -- Basic Strategies
 try' :: Strategy p -> Strategy p
