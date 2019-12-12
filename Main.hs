@@ -10,7 +10,20 @@ idExpr = Abs "x" (Var "x")
 expr = App idExpr (App idExpr (Abs "z" (App idExpr (Var "z"))))
 strategy = repeat' (function strategy)
 
-simplified = apply normalOrder expr
+simplified = apply callByValue expr
 
 main :: IO ()
-main = putStrLn (show simplified)
+main = do
+    putStrLn ""
+    putStrLn ((show "input: ") ++ (show expr))
+    putStrLn ""
+    putStrLn (show "NormalOrder:")
+    putStrLn (show (apply normalOrder expr))
+    putStrLn ""
+    putStrLn (show "CallByValue:")
+    putStrLn (show (apply callByValue expr))
+    putStrLn ""
+    putStrLn (show "CallByName:")
+    putStrLn (show (apply callByName expr))
+
+

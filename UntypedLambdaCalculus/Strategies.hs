@@ -8,18 +8,18 @@ import UntypedLambdaCalculus.Core
 
 betaReduction :: Strategy Expr
 betaReduction = Strategy (\p -> case p of
-    (App (Abs x e) y) -> success betaReduction (substitute x y e)
-    _                 -> Failure betaReduction) "betaReduction"
+    r@(App (Abs x e) y) -> success r betaReduction (substitute x y e)
+    _                   -> Failure betaReduction) "betaReduction"
 
 -- todo create fresh name
 etaAbstraction :: Strategy Expr
-etaAbstraction = Strategy (\p -> success etaAbstraction (Abs "η" (App p (Var "η")))) "etaAbstraction"
+etaAbstraction = Strategy (\p -> success p etaAbstraction (Abs "η" (App p (Var "η")))) "etaAbstraction"
 
 -- todo check that it's free
 etaReduction :: Strategy Expr
 etaReduction = Strategy (\p -> case p of
-    (Abs x e) -> success etaReduction e
-    _         -> Failure etaReduction) "etaReduction"
+    r@(Abs x e) -> success r etaReduction e
+    _           -> Failure etaReduction) "etaReduction"
 
 -- Evaluation Strategies
 normalOrder :: Strategy Expr
@@ -40,9 +40,9 @@ someOtherOrder = repeat' (oncebu betaReduction)
 -- Lambda Calculus Traversable Instance
 instance Traversable' Expr where
     all' s = Strategy (\p -> case p of 
-        (Var x)   -> success (all' s) (Var x)
-        (Abs x e) -> mapSuccess (\g -> Abs x g) (apply s e)
-        (App f e) -> flatMapSuccess (
+        r@(Var x)   -> success r (all' s) (Var x)
+        (Abs x e)   -> mapSuccess (\g -> Abs x g) (apply s e)
+        (App f e)   -> flatMapSuccess (
             Strategy (\a -> mapSuccess (\b -> App a b) (apply s e)) ""
             ) (apply s f)
         ) "all'"

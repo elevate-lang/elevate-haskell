@@ -4,7 +4,7 @@ import Elevate
 
 -- Naive Strategies
 id' :: Strategy p 
-id' = Strategy (\p -> success id' p) "id'"
+id' = Strategy (\p -> success p id' p) "id'"
 
 fail' :: Strategy p
 fail' = Strategy (\p -> Failure fail') "fail'"
