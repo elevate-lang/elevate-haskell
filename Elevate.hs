@@ -70,22 +70,20 @@ get (Failure _)   = Nothing
 generateDerivation :: Show p => p -> RewriteResult p -> String
 generateDerivation _ (Failure _)   = "Failure"
 generateDerivation p (Success _ t) = 
-    (fst (foldl foldOp ("", p) t)) ++ (show (case (last t) of
+    (fst (foldl (foldOp (\x -> whitespaceToRule x (maxExprLength p t))) ("", p) t)) ++ (show (case (last t) of
         RewriteStep r s p -> p))
 
---(\acc x -> case acc of 
---        -- acc = (string, parentExpr)
---        (a, b) -> ((a ++ (case x of 
---            rs@(RewriteStep redex rule result) -> 
---                (underline (fromJust (findString (show redex) (show b))) (length (show redex))) ++ "\n" ++
---                " [ " ++ (show rule) ++ " ]\n" ++
---                (show result) ++ "\n")), (case x of 
---            rs@(RewriteStep redex rule result) -> (show result)))
---    )
+maxExprLength :: Show p => p -> Trace p  -> Int
+maxExprLength p t = foldl (\acc x -> case x of
+    RewriteStep r s e -> max acc (length (show e))
+        ) (length (show p)) t
 
-foldOp:: Show p => (String, p) -> RewriteStep p -> (String, p)
-foldOp (acc, parent) (RewriteStep redex rule result) = (
-    acc ++ (show parent) ++ "\t[" ++ (show rule) ++ "]\n" ++
+whitespaceToRule :: Show p => p -> Int -> String
+whitespaceToRule p l = replicate (l - (length (show p)) + 2) ' '
+
+foldOp :: Show p => (p -> String) -> (String, p) -> RewriteStep p -> (String, p)
+foldOp wsToRule (acc, parent) (RewriteStep redex rule result) = (
+    acc ++ (show parent) ++ (wsToRule parent) ++ "[" ++ (show rule) ++ "]\n" ++
     (underline (fromJust (findString (show redex) (show parent))) (length (show redex))) ++ "\n",
     result)
 
