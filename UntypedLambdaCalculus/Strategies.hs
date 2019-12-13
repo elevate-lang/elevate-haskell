@@ -52,7 +52,7 @@ instance Traversable' Expr where
         (Abs x e) -> mapSuccess (\g -> Abs x g) (apply s e)
         (App f e) -> flatMapFailure (
             \_ -> mapSuccess (\b -> App f b) (apply s e)
-            ) (apply s f)
+            ) (mapSuccess (\b -> App b e) (apply s f))
         ) "one'"
 
 
