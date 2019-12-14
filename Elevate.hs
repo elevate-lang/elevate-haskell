@@ -88,7 +88,7 @@ foldOp wsToRule (acc, parent) (RewriteStep redex rule result) = (
     result)
 
 underline :: Int -> Int -> String
-underline ws dash = (replicate ws ' ') ++ (replicate dash '-')
+underline ws dash = replicate ws ' ' ++ replicate dash '-'
 
 findString :: (Eq a) => [a] -> [a] -> Maybe Int
 findString search str = findIndex (isPrefixOf search) (tails str)

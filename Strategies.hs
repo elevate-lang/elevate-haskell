@@ -13,15 +13,23 @@ fail' = Strategy (\p -> Failure fail') "fail'"
 seq' :: Strategy p -> Strategy p -> Strategy p
 seq' f s = Strategy (\p -> flatMapSuccess s (apply f p)) "seq'"
 
+-- seq' Alternativ Syntax
+(~>>) :: Strategy p -> Strategy p -> Strategy p
+(~>>) f s = seq' f s
+
 lChoice' :: Strategy p -> Strategy p -> Strategy p
 lChoice' f s = Strategy (\p -> flatMapFailure (\_ -> (apply s p)) (apply f p)) "lChoice'"
 
+-- lChoice' Alternativ Syntax
+(<+) :: Strategy p -> Strategy p -> Strategy p
+(<+) f s = lChoice' f s
+
 -- Basic Strategies
 try' :: Strategy p -> Strategy p
-try' s = lChoice' s id'
+try' s = s <+ id'
 
 repeat' :: Strategy p -> Strategy p
-repeat' s = try' (seq' s (repeat' s))
+repeat' s = try' (s ~>> (repeat' s))
 
 -- Traversable
 class Traversable' p where
@@ -31,13 +39,13 @@ class Traversable' p where
 
 -- Complete Traversals
 oncetd :: Traversable' p => Strategy p -> Strategy p
-oncetd s = lChoice' s (one' (oncetd s))
+oncetd s = s <+ (one' (oncetd s))
 
 oncebu :: Traversable' p => Strategy p -> Strategy p
-oncebu s = lChoice' (one' (oncebu s)) s
+oncebu s = (one' (oncebu s)) <+ s
 
 topdown :: Traversable' p => Strategy p -> Strategy p
-topdown s = seq' s (all' (topdown s))
+topdown s = s ~>> (all' (topdown s))
 
 -- Normalize
 normalize :: Traversable' p => Strategy p -> Strategy p

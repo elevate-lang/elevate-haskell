@@ -26,10 +26,10 @@ normalOrder :: Strategy Expr
 normalOrder = normalize betaReduction
 
 callByName :: Strategy Expr
-callByName = repeat' (lChoice' betaReduction (lChoice' (function callByName) (argument callByName)))
+callByName = repeat' (betaReduction <+ ((function callByName) <+ (argument callByName)))
 
 callByValueStep :: Strategy Expr
-callByValueStep = lChoice' (lChoice' (function callByValueStep) (argument callByValueStep)) betaReduction
+callByValueStep = ((function callByValueStep) <+ (argument callByValueStep)) <+ betaReduction
 
 callByValue :: Strategy Expr
 callByValue = repeat' callByValueStep

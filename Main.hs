@@ -1,6 +1,7 @@
 import UntypedLambdaCalculus.Core
 import UntypedLambdaCalculus.Strategies
 import UntypedLambdaCalculus.Definitions
+import UntypedLambdaCalculus.Parser
 import Elevate
 import Strategies
 
@@ -16,25 +17,16 @@ simplified = apply callByValue expr
 applyAndPrint:: Strategy Expr -> Expr -> String
 applyAndPrint s e = generateDerivation e (apply s e)
 
-bools = App (App (App test tru) (Var "v")) (Var "w")
+bools = App (App (App test tru) $ Var "v") $ Var "w"
+bools2 = App (App and' tru) tru
+
+pairs = App snd' (App (App pair (Var "v")) (Var "w"))
 
 main :: IO ()
 main = do
     putStrLn ""
-    putStrLn ((show "input: ") ++ (show expr))
-    putStrLn ""
-    putStrLn (show "NormalOrder:")
-    putStrLn (applyAndPrint normalOrder expr)
-    putStrLn ""
-    putStrLn (show "CallByValue:")
-    putStrLn (applyAndPrint callByValue expr)
-    putStrLn ""
-    putStrLn (show "CallByName:")
-    putStrLn (applyAndPrint callByName expr)
-    putStrLn ""
-    putStrLn ""
-    putStrLn (show "Boolean:")
-    putStrLn (applyAndPrint normalOrder bools)
+    putStrLn $ "Pairs:"
+    putStrLn $ applyAndPrint normalOrder pairs
 
 
 
