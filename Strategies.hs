@@ -11,14 +11,14 @@ fail' = Strategy (\p -> Failure fail') "fail'"
 
 -- Basic Combinators
 seq' :: Strategy p -> Strategy p -> Strategy p
-seq' f s = Strategy (\p -> flatMapSuccess s (apply f p)) "seq'"
+seq' f s = Strategy (\p -> flatMapSuccess s (f $$ p)) "seq'"
 
 -- seq' Alternativ Syntax
 (~>>) :: Strategy p -> Strategy p -> Strategy p
 (~>>) f s = seq' f s
 
 lChoice' :: Strategy p -> Strategy p -> Strategy p
-lChoice' f s = Strategy (\p -> flatMapFailure (\_ -> (apply s p)) (apply f p)) "lChoice'"
+lChoice' f s = Strategy (\p -> flatMapFailure (\_ -> (s $$ p)) (f $$ p)) "lChoice'"
 
 -- lChoice' Alternativ Syntax
 (<+) :: Strategy p -> Strategy p -> Strategy p

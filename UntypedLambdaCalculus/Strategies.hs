@@ -41,36 +41,36 @@ someOtherOrder = repeat' (oncebu betaReduction)
 instance Traversable' Expr where
     all' s = Strategy (\p -> case p of 
         r@(Var x) -> success r (all' s) (Var x)
-        (Abs x e) -> mapSuccess (\g -> Abs x g) (apply s e)
+        (Abs x e) -> mapSuccess (\g -> Abs x g) (s $$ e)
         (App f e) -> flatMapSuccess (
-            Strategy (\a -> mapSuccess (\b -> App a b) (apply s e)) ""
-            ) (apply s f)
+            Strategy (\a -> mapSuccess (\b -> App a b) (s $$ e)) ""
+            ) (s $$ f)
         ) "all'"
 
     one' s = Strategy (\p -> case p of 
         (Var x)   -> Failure (one' s)
-        (Abs x e) -> mapSuccess (\g -> Abs x g) (apply s e)
+        (Abs x e) -> mapSuccess (\g -> Abs x g) (s $$ e)
         (App f e) -> flatMapFailure (
-            \_ -> mapSuccess (\b -> App f b) (apply s e)
-            ) (mapSuccess (\b -> App b e) (apply s f))
+            \_ -> mapSuccess (\b -> App f b) (s $$ e)
+            ) (mapSuccess (\b -> App b e) (s $$ f))
         ) "one'"
 
 
 -- Lambda Calculus Traversals
 body :: Strategy Expr -> Strategy Expr
 body s = Strategy (\p -> case p of 
-    (Abs x e) -> mapSuccess (\p -> (Abs x p)) (apply s e)
+    (Abs x e) -> mapSuccess (\p -> (Abs x p)) (s $$ e)
     _         -> Failure (body s)
     ) "body"
 
 function :: Strategy Expr -> Strategy Expr
 function s = Strategy (\p -> case p of 
-    (App f e) -> mapSuccess (\x -> (App x e)) (apply s f)
+    (App f e) -> mapSuccess (\x -> (App x e)) (s $$ f)
     _         -> Failure (function s)
     ) "function"
 
 argument :: Strategy Expr -> Strategy Expr
 argument s = Strategy (\p -> case p of
-    (App f e) -> mapSuccess (\x -> (App f x)) (apply s e)
+    (App f e) -> mapSuccess (\x -> (App f x)) (s $$ e)
     _         -> Failure (argument s)
     ) "argument"

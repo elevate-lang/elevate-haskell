@@ -10,6 +10,9 @@ data Strategy p = Strategy (Transformation p) String
 apply :: Strategy p -> p -> RewriteResult p
 apply (Strategy s n) p = s p
 
+($$) :: Strategy p -> p -> RewriteResult p 
+($$) = apply
+
 -- Trace: [(Redex, Rule, Result)] 
 data RewriteStep p = RewriteStep p (Strategy p) p
 type Trace p = [RewriteStep p]
@@ -17,6 +20,16 @@ type Trace p = [RewriteStep p]
 -- RewriteResult
 data RewriteResult p = Success p (Trace p)
                      | Failure (Strategy p) 
+
+--instance Functor Strategy where
+--    fmap f (Strategy t n) = Strategy (\a -> (f <$> (t a))) n
+--
+--instance Functor RewriteStep where
+--    fmap f (RewriteStep r s p) = RewriteStep (f r) (f <$> s) (f p)
+--
+--instance Functor RewriteResult where
+--    -- or only modify the head?
+--    fmap f (Success p t) = Success (f p) (map (fmap f) t)
 
 -- Utils
 success :: p -> Strategy p -> p -> RewriteResult p
@@ -46,7 +59,7 @@ mapSuccess f (Success p ((RewriteStep r s e):ts)) = Success (f p) (RewriteStep r
 mapSuccess f (Failure s)   = Failure s
 
 flatMapSuccess :: Strategy p -> RewriteResult p -> RewriteResult p
-flatMapSuccess f (Success p t) = appendTrace t (apply f p) f
+flatMapSuccess f (Success p t) = appendTrace t (f $$ p) f
 flatMapSuccess f (Failure s)   = Failure s
 
 mapFailure :: (Strategy p -> Strategy p) -> RewriteResult p -> RewriteResult p
