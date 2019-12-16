@@ -9,8 +9,6 @@ data Strategy p = Strategy (Transformation p) String
 
 apply :: Strategy p -> p -> RewriteResult p
 apply (Strategy s n) p = s p
-
-($$) :: Strategy p -> p -> RewriteResult p 
 ($$) = apply
 
 -- Trace: [(Redex, Rule, Result)] 
@@ -20,16 +18,6 @@ type Trace p = [RewriteStep p]
 -- RewriteResult
 data RewriteResult p = Success p (Trace p)
                      | Failure (Strategy p) 
-
---instance Functor Strategy where
---    fmap f (Strategy t n) = Strategy (\a -> (f <$> (t a))) n
---
---instance Functor RewriteStep where
---    fmap f (RewriteStep r s p) = RewriteStep (f r) (f <$> s) (f p)
---
---instance Functor RewriteResult where
---    -- or only modify the head?
---    fmap f (Success p t) = Success (f p) (map (fmap f) t)
 
 -- Utils
 success :: p -> Strategy p -> p -> RewriteResult p

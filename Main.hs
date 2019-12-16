@@ -2,7 +2,7 @@ import UntypedLambdaCalculus.Core
 import UntypedLambdaCalculus.Strategies
 import UntypedLambdaCalculus.Definitions
 import UntypedLambdaCalculus.Parser
-import Elevate
+import ElevateMaybe
 import Strategies
 
 expr1 = App (Abs "y" (Var "y")) (Var "a")
@@ -14,9 +14,6 @@ strategy = repeat' (function strategy)
 
 simplified = apply callByValue expr
 
-applyAndPrint:: Strategy Expr -> Expr -> String
-applyAndPrint s e = generateDerivation e (apply s e)
-
 bools = App (App (App test tru) $ Var "v") $ Var "w"
 bools2 = App (App and' tru) tru
 
@@ -26,7 +23,7 @@ main :: IO ()
 main = do
     putStrLn ""
     putStrLn $ "Pairs:"
-    putStrLn $ applyAndPrint normalOrder pairs
+    putStrLn $ show simplified
 
 
 

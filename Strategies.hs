@@ -1,28 +1,23 @@
 module Strategies where 
 
-import Elevate
+import ElevateMaybe
+import Control.Applicative
 
 -- Naive Strategies
 id' :: Strategy p 
-id' = Strategy (\p -> success p id' p) "id'"
+id' = Strategy (\p -> Success p) "id'"
 
 fail' :: Strategy p
-fail' = Strategy (\p -> Failure fail') "fail'"
+fail' = Strategy (\p -> Failure) "fail'"
 
 -- Basic Combinators
 seq' :: Strategy p -> Strategy p -> Strategy p
-seq' f s = Strategy (\p -> flatMapSuccess s (f $$ p)) "seq'"
-
--- seq' Alternativ Syntax
-(~>>) :: Strategy p -> Strategy p -> Strategy p
-(~>>) f s = seq' f s
+seq' f s = Strategy (\p -> (f $$ p) >>= (\p -> s $$ p)) "seq'"
+(~>>) = seq' 
 
 lChoice' :: Strategy p -> Strategy p -> Strategy p
-lChoice' f s = Strategy (\p -> flatMapFailure (\_ -> (s $$ p)) (f $$ p)) "lChoice'"
-
--- lChoice' Alternativ Syntax
-(<+) :: Strategy p -> Strategy p -> Strategy p
-(<+) f s = lChoice' f s
+lChoice' f s = Strategy (\p -> (f $$ p) <|> (s $$ p)) "lChoice'"
+(<+) = lChoice'
 
 -- Basic Strategies
 try' :: Strategy p -> Strategy p
@@ -39,14 +34,14 @@ class Traversable' p where
 
 -- Complete Traversals
 oncetd :: Traversable' p => Strategy p -> Strategy p
-oncetd s = s <+ (one' (oncetd s))
+oncetd s = s <+ (one' . oncetd $ s)
 
 oncebu :: Traversable' p => Strategy p -> Strategy p
-oncebu s = (one' (oncebu s)) <+ s
+oncebu s = (one' . oncebu $ s) <+ s
 
 topdown :: Traversable' p => Strategy p -> Strategy p
-topdown s = s ~>> (all' (topdown s))
+topdown s = s ~>> (all' . topdown $ s)
 
 -- Normalize
 normalize :: Traversable' p => Strategy p -> Strategy p
-normalize s = repeat' (oncetd s)
+normalize s = repeat' . oncetd $ s
