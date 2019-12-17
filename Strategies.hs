@@ -1,14 +1,7 @@
 module Strategies where 
 
-import ElevateMaybe
+import Elevate
 import Control.Applicative
-
--- Naive Strategies
-id' :: Strategy p 
-id' = Strategy (\p -> Success p) "id'"
-
-fail' :: Strategy p
-fail' = Strategy (\p -> Failure) "fail'"
 
 -- Basic Combinators
 seq' :: Strategy p -> Strategy p -> Strategy p

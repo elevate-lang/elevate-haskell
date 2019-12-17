@@ -1,6 +1,6 @@
 module UntypedLambdaCalculus.Strategies where
 
-import ElevateMaybe
+import Elevate
 import Strategies
 import UntypedLambdaCalculus.Core
 
@@ -11,7 +11,7 @@ import Control.Applicative
 betaReduction :: Strategy Expr
 betaReduction = Strategy (\p -> case p of
     r@(App (Abs x e) y) -> Success (substitute x y e)
-    _                   -> Failure) "betaReduction"
+    _                   -> Failure betaReduction) "betaReduction"
 
 -- todo create fresh name
 etaAbstraction :: Strategy Expr
@@ -21,7 +21,7 @@ etaAbstraction = Strategy (\p -> Success (Abs "η" (App p (Var "η")))) "etaAbst
 etaReduction :: Strategy Expr
 etaReduction = Strategy (\p -> case p of
     r@(Abs x e) -> Success e
-    _           -> Failure) "etaReduction"
+    _           -> Failure etaReduction) "etaReduction"
 
 -- Evaluation Strategies
 normalOrder :: Strategy Expr
@@ -48,7 +48,7 @@ instance Traversable' Expr where
         ) "all'"
 
     one' s = Strategy (\p -> case p of 
-        (Var x)   -> Failure 
+        (Var x)   -> Failure (one' s)
         (Abs x e) -> (\g -> Abs x g) <$> (s $$ e)
         (App f e) -> ((\b -> App b e) <$> (s $$ f)) <|> ((\b -> App f b) <$> (s $$ e))
              
@@ -59,17 +59,17 @@ instance Traversable' Expr where
 body :: Strategy Expr -> Strategy Expr
 body s = Strategy (\p -> case p of 
     (Abs x e) -> (\p -> (Abs x p)) <$> (s $$ e)
-    _         -> Failure 
+    _         -> Failure (body s)
     ) "body"
 
 function :: Strategy Expr -> Strategy Expr
 function s = Strategy (\p -> case p of 
     (App f e) -> (\x -> (App x e)) <$> (s $$ f)
-    _         -> Failure 
+    _         -> Failure (function s)
     ) "function"
 
 argument :: Strategy Expr -> Strategy Expr
 argument s = Strategy (\p -> case p of
     (App f e) -> (\x -> (App f x)) <$> (s $$ e)
-    _         -> Failure 
+    _         -> Failure (function s)
     ) "argument"

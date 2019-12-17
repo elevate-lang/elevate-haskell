@@ -2,7 +2,7 @@ import UntypedLambdaCalculus.Core
 import UntypedLambdaCalculus.Strategies
 import UntypedLambdaCalculus.Definitions
 import UntypedLambdaCalculus.Parser
-import ElevateMaybe
+import Elevate
 import Strategies
 
 expr1 = App (Abs "y" (Var "y")) (Var "a")
