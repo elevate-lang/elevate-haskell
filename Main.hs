@@ -12,7 +12,7 @@ idExpr = Abs "x" (Var "x")
 expr = App idExpr (App idExpr (Abs "z" (App idExpr (Var "z"))))
 strategy = repeat' (function strategy)
 
-simplified = apply callByValue expr
+simplified = callByValue expr
 
 bools = App (App (App test tru) $ Var "v") $ Var "w"
 bools2 = App (App and' tru) tru
@@ -23,6 +23,7 @@ main :: IO ()
 main = do
     putStrLn ""
     putStrLn $ "Pairs:"
+    putStrLn $ show expr
     putStrLn $ show simplified
 
 

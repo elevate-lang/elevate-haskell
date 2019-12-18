@@ -5,18 +5,18 @@ import Control.Applicative
 
 -- Basic Combinators
 seq' :: Strategy p -> Strategy p -> Strategy p
-seq' f s = Strategy (\p -> (f $$ p) >>= (\p -> s $$ p)) "seq'"
+seq' f s = \p -> (f p) >>= (\p -> s p)
 (~>>) = seq' 
 
 lChoice' :: Strategy p -> Strategy p -> Strategy p
-lChoice' f s = Strategy (\p -> (f $$ p) <|> (s $$ p)) "lChoice'"
+lChoice' f s = \p -> (f p) <|> (s p)
 (<+) = lChoice'
 
 -- Basic Strategies
-try' :: Strategy p -> Strategy p
+try' :: Show p => Strategy p -> Strategy p
 try' s = s <+ id'
 
-repeat' :: Strategy p -> Strategy p
+repeat' :: Show p => Strategy p -> Strategy p
 repeat' s = try' (s ~>> (repeat' s))
 
 -- Traversable
@@ -36,5 +36,5 @@ topdown :: Traversable' p => Strategy p -> Strategy p
 topdown s = s ~>> (all' . topdown $ s)
 
 -- Normalize
-normalize :: Traversable' p => Strategy p -> Strategy p
+normalize :: Show p => Traversable' p => Strategy p -> Strategy p
 normalize s = repeat' . oncetd $ s

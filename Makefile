@@ -1,5 +1,5 @@
 all: clean
-	ghc -dynamic *.hs && ./Main
+	ghc -dynamic -XGADTs *.hs && ./Main
 
 clean: 
 	rm -f *.hi *.o

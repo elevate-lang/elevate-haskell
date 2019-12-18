@@ -9,19 +9,17 @@ import Control.Applicative
 -- Lambda Calculus Rules
 
 betaReduction :: Strategy Expr
-betaReduction = Strategy (\p -> case p of
-    r@(App (Abs x e) y) -> Success (substitute x y e)
-    _                   -> Failure betaReduction) "betaReduction"
+betaReduction r@(App (Abs x e) y) = Success (substitute x y e) (addTrace r "betaReduction" (substitute x y e))
+betaReduction _                   = Failure betaReduction
 
 -- todo create fresh name
 etaAbstraction :: Strategy Expr
-etaAbstraction = Strategy (\p -> Success (Abs "η" (App p (Var "η")))) "etaAbstraction"
+etaAbstraction = \p -> Success (Abs "η" (App p (Var "η"))) ["etaAbstraction"]
 
 -- todo check that it's free
 etaReduction :: Strategy Expr
-etaReduction = Strategy (\p -> case p of
-    r@(Abs x e) -> Success e
-    _           -> Failure etaReduction) "etaReduction"
+etaReduction r@(Abs x e) = Success e ["etaReduction"]
+etaReduction _           = Failure etaReduction 
 
 -- Evaluation Strategies
 normalOrder :: Strategy Expr
@@ -41,35 +39,28 @@ someOtherOrder = repeat' (oncebu betaReduction)
 
 -- Lambda Calculus Traversable Instance
 instance Traversable' Expr where
-    all' s = Strategy (\p -> case p of 
-        r@(Var x) -> Success (Var x)
-        (Abs x e) -> (\g -> Abs x g) <$> (s $$ e)
-        (App f e) -> (s $$ f) >>= (\a -> (\b -> App a b) <$> (s $$ e))  
-        ) "all'"
-
-    one' s = Strategy (\p -> case p of 
+    all' s = \p -> case p of 
+        r@(Var x) -> Success (Var x) ["all"]
+        (Abs x e) -> (\g -> Abs x g) <$> (s e)
+        (App f e) -> (s f) >>= (\a -> (\b -> App a b) <$> (s e))  
+        
+    one' s = \p -> case p of 
         (Var x)   -> Failure (one' s)
-        (Abs x e) -> (\g -> Abs x g) <$> (s $$ e)
-        (App f e) -> ((\b -> App b e) <$> (s $$ f)) <|> ((\b -> App f b) <$> (s $$ e))
-             
-        ) "one'"
-
+        (Abs x e) -> appendTrace ["abs"] ((\g -> Abs x g) <$> (s e))
+        (App f e) -> appendTrace ["app"] (((\b -> App b e) <$> (s f)) <|> ((\b -> App f b) <$> (s e)))
 
 -- Lambda Calculus Traversals
 body :: Strategy Expr -> Strategy Expr
-body s = Strategy (\p -> case p of 
-    (Abs x e) -> (\p -> (Abs x p)) <$> (s $$ e)
+body s = \p -> case p of 
+    (Abs x e) -> (\p -> (Abs x p)) <$> (s e)
     _         -> Failure (body s)
-    ) "body"
 
 function :: Strategy Expr -> Strategy Expr
-function s = Strategy (\p -> case p of 
-    (App f e) -> (\x -> (App x e)) <$> (s $$ f)
+function s = \p -> case p of 
+    (App f e) -> (\x -> (App x e)) <$$> (s f)
     _         -> Failure (function s)
-    ) "function"
 
 argument :: Strategy Expr -> Strategy Expr
-argument s = Strategy (\p -> case p of
-    (App f e) -> (\x -> (App f x)) <$> (s $$ e)
+argument s = \p -> case p of
+    (App f e) -> (\x -> (App f x)) <$$> (s e)
     _         -> Failure (function s)
-    ) "argument"
