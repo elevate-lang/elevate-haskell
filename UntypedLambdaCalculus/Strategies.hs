@@ -9,16 +9,18 @@ import Control.Applicative
 -- Lambda Calculus Rules
 
 betaReduction :: Strategy Expr
-betaReduction r@(App (Abs x e) y) = Success (substitute x y e) (addTrace r "betaReduction" (substitute x y e))
+betaReduction r@(App (Abs x e) y) = Success (substitute x y e) (trace r "betaReduction" (substitute x y e))
 betaReduction _                   = Failure betaReduction
 
 -- todo create fresh name
+-- todo fix trace
 etaAbstraction :: Strategy Expr
-etaAbstraction = \p -> Success (Abs "η" (App p (Var "η"))) ["etaAbstraction"]
+etaAbstraction = \p -> Success (Abs "η" (App p (Var "η"))) [("", "etaAbstraction", "")]
 
 -- todo check that it's free
+-- todo fix trace
 etaReduction :: Strategy Expr
-etaReduction r@(Abs x e) = Success e ["etaReduction"]
+etaReduction r@(Abs x e) = Success e [("","etaReduction","")]
 etaReduction _           = Failure etaReduction 
 
 -- Evaluation Strategies
@@ -38,21 +40,22 @@ someOtherOrder :: Strategy Expr
 someOtherOrder = repeat' (oncebu betaReduction)
 
 -- Lambda Calculus Traversable Instance
+-- todo fix trace
 instance Traversable' Expr where
     all' s = \p -> case p of 
-        r@(Var x) -> Success (Var x) ["all"]
+        r@(Var x) -> Success (Var x) freshTrace
         (Abs x e) -> (\g -> Abs x g) <$> (s e)
         (App f e) -> (s f) >>= (\a -> (\b -> App a b) <$> (s e))  
         
     one' s = \p -> case p of 
         (Var x)   -> Failure (one' s)
-        (Abs x e) -> appendTrace ["abs"] ((\g -> Abs x g) <$> (s e))
-        (App f e) -> appendTrace ["app"] (((\b -> App b e) <$> (s f)) <|> ((\b -> App f b) <$> (s e)))
+        (Abs x e) -> ((\g -> Abs x g) <$$> (s e))
+        (App f e) -> ((\b -> App b e) <$$> (s f)) <|> ((\b -> App f b) <$$> (s e))
 
 -- Lambda Calculus Traversals
 body :: Strategy Expr -> Strategy Expr
 body s = \p -> case p of 
-    (Abs x e) -> (\p -> (Abs x p)) <$> (s e)
+    (Abs x e) -> (\p -> (Abs x p)) <$$> (s e)
     _         -> Failure (body s)
 
 function :: Strategy Expr -> Strategy Expr
