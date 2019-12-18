@@ -44,8 +44,8 @@ someOtherOrder = repeat' (oncebu betaReduction)
 instance Traversable' Expr where
     all' s = \p -> case p of 
         r@(Var x) -> Success (Var x) freshTrace
-        (Abs x e) -> (\g -> Abs x g) <$> (s e)
-        (App f e) -> (s f) >>= (\a -> (\b -> App a b) <$> (s e))  
+        (Abs x e) -> (\g -> Abs x g) <$$> (s e)
+        (App f e) -> (s f) >>= (\a -> (\b -> App a b) <$$> (s e))  
         
     one' s = \p -> case p of 
         (Var x)   -> Failure (one' s)
