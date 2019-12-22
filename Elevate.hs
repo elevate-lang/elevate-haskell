@@ -35,8 +35,8 @@ type RewriteStep = (String, String, String)
 -- fail' :: Strategy p
 -- fail' = \_ -> Failure fail'
 
-data Id' = Id'
-instance Strategy Id' p where
+data Id' p = Id'
+instance Strategy (Id' p) p where
     Id' $$ p = Success p
 
 data Fail' = Fail'
