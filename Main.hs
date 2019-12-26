@@ -2,8 +2,8 @@ import UntypedLambdaCalculus.Core
 import UntypedLambdaCalculus.Strategies
 import UntypedLambdaCalculus.Definitions
 import UntypedLambdaCalculus.Parser
--- import Elevate
--- import Strategies
+import Elevate
+import Strategies
 
 expr1 = App (Abs "y" (Var "y")) (Var "a")
 
@@ -12,7 +12,7 @@ idExpr = Abs "x" (Var "x")
 expr = App idExpr (App idExpr (Abs "z" (App idExpr (Var "z"))))
 -- strategy = repeat' (function strategy)
 
--- simplified = normalOrder expr
+simplified = callByName $$ expr
 
 bools = App (App (App test tru) $ Var "v") $ Var "w"
 bools2 = App (App and' tru) tru

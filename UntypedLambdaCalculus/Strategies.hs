@@ -1,3 +1,6 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 module UntypedLambdaCalculus.Strategies where
 
 import Elevate
@@ -8,62 +11,61 @@ import Control.Applicative
 
 -- Lambda Calculus Rules
 
-betaReduction :: Strategy Expr
-betaReduction r@(App (Abs x e) y) = Success (substitute x y e) 
-betaReduction _                   = Failure betaReduction
+data BetaReduction = BetaReduction
+instance Strategy BetaReduction Expr where
+    BetaReduction $$ r@(App (Abs x e) y) = Success (substitute x y e)
+    BetaReduction $$ _                   = Failure -- BetaReduction
 
 -- todo create fresh name
--- todo fix trace
-etaAbstraction :: Strategy Expr
-etaAbstraction = \p -> Success (Abs "η" (App p (Var "η"))) 
-
+data EtaAbstraction = EtaAbstraction
+instance Strategy EtaAbstraction Expr where
+    EtaAbstraction $$ p = Success (Abs "η" (App p (Var "η")))
+    
 -- todo check that it's free
--- todo fix trace
-etaReduction :: Strategy Expr
-etaReduction r@(Abs x e) = Success e 
-etaReduction _           = Failure etaReduction 
+data EtaReduction = EtaReduction
+instance Strategy EtaReduction Expr where
+    EtaReduction $$ Abs x e = Success e 
+    EtaReduction $$ _       = Failure -- EtaReduction
 
 -- Evaluation Strategies
-normalOrder :: Strategy Expr
-normalOrder = normalize betaReduction
+normalOrder = normalize BetaReduction
 
-callByName :: Strategy Expr
-callByName = repeat' (betaReduction <+ ((function callByName) <+ (argument callByName)))
+callByName = Repeat' (BetaReduction <+ ((Function callByName) <+ (Argument callByName)))
 
-callByValueStep :: Strategy Expr
-callByValueStep = ((function callByValueStep) <+ (argument callByValueStep)) <+ betaReduction
-
-callByValue :: Strategy Expr
-callByValue = repeat' callByValueStep
-
-someOtherOrder :: Strategy Expr
-someOtherOrder = repeat' (oncebu betaReduction)
+callByValueStep = ((Function callByValueStep) <+ (Argument callByValueStep)) <+ BetaReduction
+callByValue = Repeat' callByValueStep
 
 -- Lambda Calculus Traversable Instance
--- todo fix trace
 instance Traversable' Expr where
     all' s = \p -> case p of 
-        r@(Var x) -> Success (Var x) 
-        (Abs x e) -> (\g -> Abs x g) <$> (s e)
-        (App f e) -> (s f) >>= (\a -> (\b -> App a b) <$> (s e))  
+        (Var x) -> Success (Var x) 
+        (Abs x e) -> (\g -> Abs x g) <$> (s $$ e)
+        (App f e) -> (s $$ f) >>= (\a -> (\b -> App a b) <$> (s $$ e))  
         
     one' s = \p -> case p of 
-        (Var x)   -> Failure (one' s)
-        (Abs x e) -> ((\g -> Abs x g) <$> (s e))
-        (App f e) -> ((\b -> App b e) <$> (s f)) <|> ((\b -> App f b) <$> (s e))
+        (Var x)   -> Failure -- (one' s)
+        (Abs x e) -> ((\g -> Abs x g) <$> (s $$ e))
+        (App f e) -> ((\b -> App b e) <$> (s $$ f)) <|> ((\b -> App f b) <$> (s $$ e))
 
 -- Lambda Calculus Traversals
-body :: Strategy Expr -> Strategy Expr
-body s = \p -> case p of 
-    (Abs x e) -> (\p -> (Abs x p)) <$> (s e)
-    _         -> Failure (body s)
 
-function :: Strategy Expr -> Strategy Expr
-function s = \p -> case p of 
-    (App f e) -> (\x -> (App x e)) <$> (s f)
-    _         -> Failure (function s)
+-- this requires FlexibleContexts
+data Body where Body :: Strategy s Expr => s -> Body
+instance Strategy Body Expr where
+    Body s $$ (Abs x e) = (\p -> (Abs x p)) <$> (s $$ e)
+    Body s $$ _         = Failure
 
-argument :: Strategy Expr -> Strategy Expr
-argument s = \p -> case p of
-    (App f e) -> (\x -> (App f x)) <$> (s e)
-    _         -> Failure (function s)
+data Function where Function :: Strategy s Expr => s -> Function
+instance Strategy Function Expr where
+    Function s $$ (App f e) = (\x -> (App x e)) <$> (s $$ f)
+    Function s $$ _         = Failure
+
+data Argument where Argument :: Strategy s Expr => s -> Argument
+instance Strategy Argument Expr where
+    Argument s $$ (App f e) = (\x -> (App x e)) <$> (s $$ e)
+    Argument s $$ _         = Failure
+
+
+argument s = FunToStrategy $ \p -> case p of
+    (App f e) -> (\x -> (App f x)) <$> (s $$ e)
+    _         -> Failure -- (function s)
