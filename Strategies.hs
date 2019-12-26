@@ -1,10 +1,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- {-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Strategies where 
--- 
+ 
 import Elevate
 import Control.Applicative
  
@@ -13,17 +12,25 @@ data Seq' p where Seq' :: (Strategy a p, Strategy b p) => a -> b -> Seq' p
 instance Strategy (Seq' p) p where
     Seq' f s $$ x = (f $$ x) >>= (\y -> s $$ y)
 
+(~>>) :: (Strategy a p, Strategy b p) => a -> b -> Seq' p
+a ~>> b = Seq' a b
+
 data LChoice' p where LChoice' :: (Strategy s1 p, Strategy s2 p) => s1 -> s2 -> LChoice' p
 instance Strategy (LChoice' p) p where
     LChoice' f s $$ p = (f $$ p) <|> (s $$ p)
 
+(<+) :: (Strategy a p, Strategy b p) => a -> b -> LChoice' p
+a <+ b = LChoice' a b
+
+
 -- Basic Strategies
 data Try' p where Try' :: Strategy s p => s -> Try' p
 instance Strategy (Try' p) p where
-    Try' s $$ x = lChoice' s id' $$ x where
-        lChoice' = \a -> \b -> LChoice' a b :: LChoice' p
-        id' = Id' :: Id' p
+    Try' s $$ x = s <+ Id' $$ x 
 
+-- this is what I had to do without FunctionalDependencies
+-- MultiParamTypeClasses mess up type inference
+-- todo: try out TypeFamilies instead
 data Repeat' p where Repeat' :: Strategy s p => s -> Repeat' p
 instance Strategy (Repeat' p) p where
     Repeat' s $$ p = try' (seq' s (repeat' s)) $$ p where
@@ -32,27 +39,29 @@ instance Strategy (Repeat' p) p where
         repeat' = \a -> Repeat' a :: Repeat' p
 
 -- Traversable
-class Traversable' p where
-    all' :: (Strategy s1 p1, Strategy s2 p2) => s1 -> s2
-    one' :: (Strategy s1 p1, Strategy s2 p2) => s1 -> s2
-    -- some' :: Strategy p -> Strategy p 
+class Traversable' x where
+    all' :: Strategy a x => a -> x -> Rewrite x
+    one' :: Strategy a x => a -> x -> Rewrite x
+
+data FunToStrategy p where FunToStrategy :: (p -> Rewrite p) -> FunToStrategy p
+instance Strategy (FunToStrategy p) p where
+    FunToStrategy f $$ p = f p
+
+data All' p where All' :: (Strategy s p, Traversable' p) => s -> All' p
+instance Strategy (All' p) p where
+    All' s $$ p = FunToStrategy (all' s) $$ p
+
+data One' p where One' :: (Strategy s p, Traversable' p) => s -> One' p
+instance Strategy (One' p) p where
+    One' s $$ p = FunToStrategy (one' s) $$ p
+
 
 -- Complete Traversals
--- oncetd :: Traversable' p => Strategy p -> Strategy p
--- oncetd s = s <+ (one' . oncetd $ s)
+oncetd s = s <+ (One' . oncetd $ s) 
 
-oncetd :: forall a b p . (Strategy a p, Strategy b p) => a -> b
-oncetd s = LChoice' s (one' (oncetd s)) :: b
+topdown s = s ~>> (All' . topdown $ s)
 
--- oncebu :: Traversable' p => Strategy p -> Strategy p
--- oncebu s = (one' . oncebu $ s) <+ s
-
--- topdown :: Traversable' p => Strategy p -> Strategy p
-topdown s = Seq' s (all' . topdown $ s)
-
--- Normalize
--- normalize :: Show p => Traversable' p => Strategy p -> Strategy p
-normalize s = Repeat' (oncetd s)
+normalize s = Repeat' . oncetd $ s
 
 -- Simplification
 -- idSimpl :: Strategy p -> Strategy p
