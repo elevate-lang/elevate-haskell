@@ -64,8 +64,3 @@ data Argument where Argument :: Strategy s Expr => s -> Argument
 instance Strategy Argument Expr where
     Argument s $$ (App f e) = (\x -> (App x e)) <$> (s $$ e)
     Argument s $$ _         = Failure
-
-
-argument s = FunToStrategy $ \p -> case p of
-    (App f e) -> (\x -> (App f x)) <$> (s $$ e)
-    _         -> Failure -- (function s)

@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Strategies where 
@@ -64,5 +65,11 @@ topdown s = s ~>> (All' . topdown $ s)
 normalize s = Repeat' . oncetd $ s
 
 -- Simplification
--- idSimpl :: Strategy p -> Strategy p
--- idSimpl (seq' id' id') = id'
+-- idSimpl :: Seq' p -> 
+-- idSimpl (Seq' (Id' :: Id' p) (Id' :: Id' p)) = Id'
+-- idSimpl (Seq' _ _) = Id'
+
+data IdSimpl p = IdSimpl
+instance Strategy (IdSimpl p) (Seq' p) where
+    IdSimpl $$ Seq' Id' Id' = Success Id'
+    IdSimpl $$ _            = Failure 
