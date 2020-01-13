@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Elevate where 
 
@@ -14,8 +14,9 @@ import Data.List
 -- type Strategy p = p -> Rewrite p
 
 -- If i know the type of the strategy I know the type of the program
-class Strategy s p | s -> p where
-   ($$) :: s -> p -> Rewrite p
+class Strategy s where
+   type ProgramType s
+   ($$) :: s -> ProgramType s -> Rewrite (ProgramType s)
 
 data Rewrite p = Success p
                | Failure -- (Strategy p)
@@ -38,11 +39,13 @@ type RewriteStep = (String, String, String)
 -- fail' = \_ -> Failure fail'
 
 data Id' p = Id'
-instance Strategy (Id' p) p where
+instance Strategy (Id' p) where
+    type ProgramType (Id' p) = p
     Id' $$ p = Success p
 
 data Fail' p = Fail'
-instance Strategy (Fail' p) p where
+instance Strategy (Fail' p) where
+    type ProgramType (Fail' p) = p
     Fail' $$ p = Failure 
 
 
