@@ -12,7 +12,8 @@ idExpr = Abs "x" (Var "x")
 expr = App idExpr (App idExpr (Abs "z" (App idExpr (Var "z"))))
 -- strategy = repeat' (function strategy)
 
-simplified = callByName $$ expr
+--simplified = callByName $$ expr
+simplified = (Seq'' Id'' (Seq'' Id'' Fail'')) $$ expr
 
 bools = App (App (App test tru) $ Var "v") $ Var "w"
 bools2 = App (App and' tru) tru

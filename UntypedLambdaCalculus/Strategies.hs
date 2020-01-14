@@ -30,10 +30,10 @@ instance Strategy EtaReduction Expr where
 -- Evaluation Strategies
 normalOrder = normalize BetaReduction
 
-callByName = Repeat' (BetaReduction <+ ((Function callByName) <+ (Argument callByName)))
+callByName = Repeat'' (BetaReduction <+ ((Function callByName) <+ (Argument callByName)))
 
 callByValueStep = ((Function callByValueStep) <+ (Argument callByValueStep)) <+ BetaReduction
-callByValue = Repeat' callByValueStep
+callByValue = Repeat'' callByValueStep
 
 -- Lambda Calculus Traversable Instance
 instance Traversable' Expr where
