@@ -1,9 +1,17 @@
+import RML.Core
+import RML.Strategies
 import UntypedLambdaCalculus.Core
 import UntypedLambdaCalculus.Strategies
 import UntypedLambdaCalculus.Definitions
 import UntypedLambdaCalculus.Parser
 import Elevate
 import Strategies
+
+
+-- RML Tests
+
+-- let x : t = e1 in e2
+rmlExpr = Let (Vdec (Primtype "t") "x" (Simple (MLVar "e1"))) (Simple (MLVar "e2"))
 
 expr1 = App (Abs "y" (Var "y")) (Var "a")
 
@@ -25,6 +33,8 @@ main = do
     putStrLn $ show simplified
     putStrLn "##################"
     putStrLn $ generateDerivation expr simplified
+    putStrLn "##################"
+    putStrLn $ generateDerivation rmlExpr (dead1 rmlExpr)
 
 
 

@@ -38,3 +38,19 @@ topdown s = s ~>> (all' . topdown $ s)
 -- Normalize
 normalize :: Show p => Traversable' p => Strategy p -> Strategy p
 normalize s = repeat' . oncetd $ s
+
+-- Predicates
+toBool :: Rewrite p -> Bool
+toBool (Success p t) = True
+toBool (Failure s)   = False
+
+not' :: Show p => Strategy p -> Strategy p
+not' s = \a -> case (s a) of 
+    (Success x t) -> Failure (not' s)
+    (Failure x)  -> Success a (trace a "not" a)
+
+is' :: (Eq p, Show p) => p -> Strategy p
+is' a = \p -> if (a == p) then (Success p (trace p "is" p)) else Failure (is' p)
+
+contains' :: (Traversable' p, Eq p, Show p) => p -> Strategy p 
+contains' a = oncetd (is' a)
